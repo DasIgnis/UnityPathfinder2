@@ -21,7 +21,7 @@ namespace BaseAI
     public class PathNode//: MonoBehaviour
     {
         public Vector3 Position { get; }         //  Позиция в глобальных координатах
-        public Vector3 Direction { get; }        //  Направление
+        public Vector3 Direction { get; set; }        //  Направление
         public float TimeMoment { get; set; }         //  Момент времени        
         /// <summary>
         /// Родительская вершина - предшествующая текущей в пути от начальной к целевой
@@ -47,7 +47,7 @@ namespace BaseAI
         public PathNode(Vector3 currentPosition)
         {
             Position = currentPosition;      //  Позицию задаём
-            Direction = Vector3.zero;        //  Направление отсутствует
+            Direction = Vector3.forward;        //  Направление отсутствует
             TimeMoment = -1.0f;              //  Время отрицательное
             Parent = null;                   //  Родителя нет
             G = 0;

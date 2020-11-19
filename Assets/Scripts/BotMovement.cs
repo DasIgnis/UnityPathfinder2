@@ -165,7 +165,7 @@ public class BotMovement : MonoBehaviour
         //var remainedTime = currentTarget.TimeMoment - Time.fixedTime;
         //if (remainedTime < movementProperties.epsilon)
         //{
-            transform.position = transform.position + actualStep * transform.forward;
+        transform.position = transform.position + actualStep * transform.forward;
         //}
         //else
         //{

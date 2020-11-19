@@ -12,26 +12,54 @@ namespace Assets.Scripts.AI.Pathfinding
 {
     public static class LocalPlanner
     {
+        private static bool CheckWalkable(Vector3 point, int areaId)
+        {
+            NavMeshHit area;
+            NavMesh.SamplePosition(point, out area, 2f, NavMesh.AllAreas);
+            return area.mask == areaId;
+        }
+
+        private static float Heur(PathNode node1, PathNode node2)
+        {
+            float angle = Vector3.Angle(node1.Direction, node2.Position - node1.Position) * Mathf.Deg2Rad;
+            return node1.Distance(node2) + Mathf.Abs(angle);
+        }
+
         public static List<PathNode> GetNeighbours(PathNode node, MovementProperties properties)
         {
+            float step = 5f;
+            float angle = 1f;
             List<PathNode> result = new List<PathNode>();
             NavMeshHit currentArea;
             if (!NavMesh.SamplePosition(node.Position, out currentArea, 2f, NavMesh.AllAreas))
                 return result;
 
-            NavMeshHit area;
-            PathNode next1 = new PathNode(
-                new Vector3(node.Position.x + properties.maxSpeed, node.Position.y, node.Position.z + properties.maxSpeed));
-            if (NavMesh.SamplePosition(next1.Position, out area, 2f, NavMesh.AllAreas) && currentArea.mask == area.mask)
+            Vector3 parentPos = node.Position;
+
+            PathNode next1 = new PathNode(node.Position + node.Direction.normalized * step);
+            if (CheckWalkable(next1.Position, currentArea.mask))
                 result.Add(next1);
 
-            PathNode next2 = new PathNode(new Vector3(node.Position.x, node.Position.y, node.Position.z + properties.maxSpeed));
-            if (NavMesh.SamplePosition(next2.Position, out area, 2f, NavMesh.AllAreas) && currentArea.mask == area.mask)
-                result.Add(next2);
+            
+            PathNode next2 = new PathNode(node.Position);
+            next2.Direction = Quaternion.Euler(0, Mathf.Rad2Deg * angle, 0) * next2.Direction;
+            //if (CheckWalkable(next2.Position, currentArea.mask))
+            //    result.Add(next2);
 
-            PathNode next3 = new PathNode(new Vector3(node.Position.x + properties.maxSpeed, node.Position.y, node.Position.z));
-            if (NavMesh.SamplePosition(next3.Position, out area, 2f, NavMesh.AllAreas) && currentArea.mask == area.mask)
-                result.Add(next3);
+            PathNode next3 = new PathNode(node.Position);
+            next3.Direction = Quaternion.Euler(0, Mathf.Rad2Deg * -angle, 0) * next3.Direction;
+            //if (CheckWalkable(next3.Position, currentArea.mask))
+            //    result.Add(next3);
+
+            PathNode next4 = new PathNode(node.Position + next2.Direction * step);
+            next4.Direction = next2.Direction;
+            if (CheckWalkable(next4.Position, currentArea.mask))
+                result.Add(next4);
+
+            PathNode next5 = new PathNode(node.Position + next3.Direction * step);
+            next5.Direction = next3.Direction;
+            if (CheckWalkable(next5.Position, currentArea.mask))
+                result.Add(next5);
 
             return result;
         }
@@ -45,7 +73,8 @@ namespace Assets.Scripts.AI.Pathfinding
             if (position.Position.Equals(target.Position))
                 return new List<PathNode>();
 
-            HashSet<PathNode> closed = new HashSet<PathNode>();
+            HashSet<(Vector3, Vector3)> closed = new HashSet<(Vector3, Vector3)>();
+            HashSet<Vector3> closedDir = new HashSet<Vector3>();
             Priority_Queue.SimplePriorityQueue<PathNode> opened = new Priority_Queue.SimplePriorityQueue<PathNode>();
             
             opened.Enqueue(position, 0);
@@ -53,31 +82,33 @@ namespace Assets.Scripts.AI.Pathfinding
 
             PathNode last = opened.First;
 
-            while (opened.Count != 0 && steps < 1000)
+            while (opened.Count != 0 && steps < 10000)
             {
                 steps++;
                 PathNode currentNode = opened.Dequeue();
                 last = currentNode;
-                closed.Add(currentNode);
+                closed.Add((currentNode.Position, currentNode.Direction));
 
-                if (currentNode.EqualsSigma(target, movementProperties.epsilon)) break;
+                if (currentNode.EqualsSigma(target, movementProperties.epsilon)) 
+                    break;
 
                 //  Получаем список соседей
                 var neighbours = GetNeighbours(currentNode, movementProperties);
                 foreach (var nextNode in neighbours)
                 {
-                    float tentative = currentNode.G + currentNode.Distance(nextNode);
+                    float tentative = currentNode.G + Heur(currentNode, nextNode);
 
-                    if (closed.Contains(nextNode) && tentative >= nextNode.G)
+                    if (closed.Contains((nextNode.Position, nextNode.Direction)) && tentative >= nextNode.G)
                     {
                         continue;
                     }
 
-                    if ((!closed.Contains(nextNode) || tentative < nextNode.G))
+                    if ((!closed.Contains((nextNode.Position, nextNode.Direction)) || tentative < nextNode.G))
                     {
                         nextNode.Parent = currentNode;
                         nextNode.G = tentative;
-                        float heur = nextNode.G + currentNode.Distance(target);
+                        float heur = nextNode.G
+                            + Heur(nextNode, target);
                         if (opened.Contains(nextNode))
                             opened.Remove(nextNode);
                         opened.Enqueue(nextNode, heur);

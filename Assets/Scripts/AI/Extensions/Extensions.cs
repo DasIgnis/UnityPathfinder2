@@ -11,8 +11,7 @@ namespace Assets.Scripts.AI.Extensions
     {
         public static bool EqualsSigma(this PathNode point, PathNode other, float sigma)
         {
-            return Math.Abs(point.Position.x - other.Position.y) < sigma
-                && Math.Abs(point.Position.y - other.Position.y) < sigma
+            return Math.Abs(point.Position.x - other.Position.x) < sigma
                 && Math.Abs(point.Position.z - other.Position.z) < sigma;
         }
     }
