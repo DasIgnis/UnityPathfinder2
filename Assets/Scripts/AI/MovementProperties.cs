@@ -30,6 +30,8 @@ namespace BaseAI
         /// </summary>
         public float epsilon = 0.1f;
 
+        public float algorithmStep = 3f;
+
     }
 
 

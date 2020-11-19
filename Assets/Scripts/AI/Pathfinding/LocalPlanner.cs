@@ -55,11 +55,15 @@ namespace Assets.Scripts.AI.Pathfinding
             next4.Direction = next2.Direction;
             if (CheckWalkable(next4.Position, currentArea.mask))
                 result.Add(next4);
+            if (!CheckWalkable(next4.Position, currentArea.mask))
+                Debug.Log("not walkable");
 
             PathNode next5 = new PathNode(node.Position + next3.Direction * step);
             next5.Direction = next3.Direction;
             if (CheckWalkable(next5.Position, currentArea.mask))
                 result.Add(next5);
+            if (!CheckWalkable(next5.Position, currentArea.mask))
+                Debug.Log("not walkable");
 
             return result;
         }
@@ -89,7 +93,7 @@ namespace Assets.Scripts.AI.Pathfinding
                 last = currentNode;
                 closed.Add((currentNode.Position, currentNode.Direction));
 
-                if (currentNode.EqualsSigma(target, movementProperties.epsilon)) 
+                if (currentNode.EqualsSigma(target, movementProperties.maxSpeed)) 
                     break;
 
                 //  Получаем список соседей

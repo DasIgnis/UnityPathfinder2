@@ -20,7 +20,7 @@ namespace BaseAI
     /// </summary>
     public class PathNode//: MonoBehaviour
     {
-        public Vector3 Position { get; }         //  Позиция в глобальных координатах
+        public Vector3 Position { get; set;  }         //  Позиция в глобальных координатах
         public Vector3 Direction { get; set; }        //  Направление
         public float TimeMoment { get; set; }         //  Момент времени        
         /// <summary>

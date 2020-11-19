@@ -7,6 +7,8 @@ public class BotMovement : MonoBehaviour
 {
     public GameObject terrain;
 
+    public GameObject DEBUGSHIT;
+
     /// <summary>
     /// Запланированный путь как список точек маршрута
     /// </summary>
@@ -100,6 +102,10 @@ public class BotMovement : MonoBehaviour
         {
             targetUpdated = false;
             currentPath = LocalPlanner.GetLocalRoute(globalTarget, new BaseAI.PathNode(transform.position), movementProperties);
+            for (int i = 0; i < currentPath.Count; i++)
+            {
+                Instantiate(DEBUGSHIT, currentPath[i].Position, Quaternion.identity);
+            }
         }
 
         if(currentPath != null)
@@ -204,7 +210,7 @@ public class BotMovement : MonoBehaviour
         if (!walking) return;
 
         //  Собственно движение
-        MoveBot();
-        MoveLegs();
+        if (MoveBot())
+            MoveLegs();
     }
 }
