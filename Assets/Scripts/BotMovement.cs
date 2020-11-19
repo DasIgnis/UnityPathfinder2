@@ -1,9 +1,12 @@
-﻿using System.Collections;
+﻿using Assets.Scripts.AI.Pathfinding;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class BotMovement : MonoBehaviour
 {
+    public GameObject terrain;
+
     /// <summary>
     /// Запланированный путь как список точек маршрута
     /// </summary>
@@ -18,6 +21,9 @@ public class BotMovement : MonoBehaviour
     /// Текущая целевая точка, к которой идёт бот
     /// </summary>
     private BaseAI.PathNode currentTarget = null;
+
+    private BaseAI.PathNode globalTarget = null;
+    private bool targetUpdated = false;
     
     /// <summary>
     /// Параметры движения бота
@@ -66,13 +72,13 @@ public class BotMovement : MonoBehaviour
     /// </summary>
     private bool UpdateCurrentTargetPoint()
     {
-
         //  Если есть текущая целевая точка
         if(currentTarget != null)
         {
             float distanceToTarget = currentTarget.Distance(transform.position);
             //  Если до текущей целевой точки ещё далеко, то выходим
-            if (distanceToTarget >= movementProperties.epsilon || currentTarget.TimeMoment - Time.fixedTime > movementProperties.epsilon) return true;
+            if (distanceToTarget >= movementProperties.epsilon)//|| currentTarget.TimeMoment - Time.fixedTime > movementProperties.epsilon) 
+                return true;
             //  Иначе удаляем её из маршрута и берём следующую
             Debug.Log("Point reached : " + Time.fixedTime.ToString());
             currentPath.RemoveAt(0);
@@ -90,6 +96,12 @@ public class BotMovement : MonoBehaviour
             }
         }
         else 
+            if (targetUpdated && globalTarget != null)
+        {
+            targetUpdated = false;
+            currentPath = LocalPlanner.GetLocalRoute(globalTarget, new BaseAI.PathNode(transform.position), movementProperties);
+        }
+
         if(currentPath != null)
         {
             if(currentPath.Count > 0 )
@@ -106,8 +118,8 @@ public class BotMovement : MonoBehaviour
         //  Здесь мы только в том случае, если целевой нет, и текущего пути нет - и то, и другое null
         //  Обращение к plannedPath желательно сделать через блокировку - именно этот список задаётся извне планировщиком
         //  Непонятно, насколько lock затратен, можно ещё булевский флажок добавить, его сначала проверять
-        //lock(plannedPath)
-        {
+        ////lock(plannedPath)
+        //{
             if(plannedPath != null)
             {
                 currentPath = plannedPath;
@@ -115,7 +127,7 @@ public class BotMovement : MonoBehaviour
                 if (currentPath.Count > 0)
                     currentTarget = currentPath[0];
             }
-        }
+        //}
         return currentTarget != null;
     }
 
@@ -150,18 +162,18 @@ public class BotMovement : MonoBehaviour
         transform.Rotate(Vector3.up, angle);
 
         //  Время прибытия - оставшееся время
-        var remainedTime = currentTarget.TimeMoment - Time.fixedTime;
-        if (remainedTime < movementProperties.epsilon)
-        {
+        //var remainedTime = currentTarget.TimeMoment - Time.fixedTime;
+        //if (remainedTime < movementProperties.epsilon)
+        //{
             transform.position = transform.position + actualStep * transform.forward;
-        }
-        else
-        {
-            //  Дедлайн ещё не скоро!!! Стоим спим
-            if (currentTarget.Distance(transform.position) < movementProperties.epsilon) return true;
+        //}
+        //else
+        //{
+        //    //  Дедлайн ещё не скоро!!! Стоим спим
+        //    if (currentTarget.Distance(transform.position) < movementProperties.epsilon) return true;
 
-            transform.position = transform.position + actualStep * transform.forward / remainedTime;
-        }
+        //    transform.position = transform.position + actualStep * transform.forward / remainedTime;
+        //}
         return true;
     }
 
@@ -171,6 +183,17 @@ public class BotMovement : MonoBehaviour
     /// </summary>
     void Update()
     {
+        if (Input.GetMouseButtonDown(0))
+        {
+            RaycastHit hit;
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (terrain.GetComponent<Collider>().Raycast(ray, out hit, Mathf.Infinity))
+            {
+                globalTarget = new BaseAI.PathNode(hit.point);
+                targetUpdated = true;
+            }
+        }
+
         //  Фрагмент кода, отвечающий за вставание
         var vertical_angle = Vector3.Angle(Vector3.up, transform.up);
         if (vertical_angle > max_angle)

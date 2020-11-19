@@ -26,9 +26,9 @@ namespace BaseAI
         /// <summary>
         /// Родительская вершина - предшествующая текущей в пути от начальной к целевой
         /// </summary>
-        private PathNode Parent { get; } = null;       //  Родительский узел
+        public PathNode Parent { get; set; } = null;       //  Родительский узел
 
-        public float G { get; }  //  Пройденный путь от цели
+        public float G { get; set; }  //  Пройденный путь от цели
         public float H { get; }  //  Пройденный путь от цели
 
         /// <summary>
