@@ -74,37 +74,45 @@ public class BotMovement : MonoBehaviour
     /// </summary>
     private bool UpdateCurrentTargetPoint()
     {
-        //  Если есть текущая целевая точка
         if(currentTarget != null)
         {
             float distanceToTarget = currentTarget.Distance(transform.position);
-            //  Если до текущей целевой точки ещё далеко, то выходим
             if (distanceToTarget >= movementProperties.epsilon)//|| currentTarget.TimeMoment - Time.fixedTime > movementProperties.epsilon) 
                 return true;
-            //  Иначе удаляем её из маршрута и берём следующую
             Debug.Log("Point reached : " + Time.fixedTime.ToString());
             currentPath.RemoveAt(0);
             if (currentPath.Count > 0) 
             {
-                //  Берём очередную точку и на выход
                 currentTarget = currentPath[0];
                 return true;
             }
             else
             {
-                currentTarget = null;
-                currentPath = null;
-                //  А вот тут надо будет проверять, есть ли уже построенный маршрут
+                // TODO:
+                // Если мы сюда пришли, то мы находимся либо в цели, либо на границе регионов, куда нас направил глобальный планировщик
+                // Снова дёргаем планировщика, если вернул не null, то 
+                // 1) смотрим, в той же что и мы зоне вернувшаяся точка
+                // 2) если в той же, то скармливает её локалпланнеру и возвращаем этот маршрут
+                // 3) если нет, то мы на границе зон. Сразу присваиваем точку из глобального планировщика currentTarget
+                // Не исключено, что из этой ф-ции имеет смысл возвращать не бульку, а enum со статусом работы
+
             }
         }
         else 
             if (targetUpdated && globalTarget != null)
         {
             targetUpdated = false;
-            currentPath = LocalPlanner.GetLocalRoute(globalTarget, new BaseAI.PathNode(transform.position), movementProperties);
-            for (int i = 0; i < currentPath.Count; i++)
+            var currentPathNode = new BaseAI.PathNode(transform.position);
+            //Пример получения майлстоуна от планировщика
+            var milestone = GlobalPlanner.GetGlobalRoute(globalTarget, currentPathNode);
+            if (milestone != null)
             {
-                Instantiate(DEBUGSHIT, currentPath[i].Position, Quaternion.identity);
+                currentPath = LocalPlanner.GetLocalRoute(globalTarget, currentPathNode, movementProperties);
+                //Для дебага и прочих шалостей
+                for (int i = 0; i < currentPath.Count; i++)
+                {
+                    Instantiate(DEBUGSHIT, currentPath[i].Position, Quaternion.identity);
+                }
             }
         }
 
@@ -126,13 +134,13 @@ public class BotMovement : MonoBehaviour
         //  Непонятно, насколько lock затратен, можно ещё булевский флажок добавить, его сначала проверять
         ////lock(plannedPath)
         //{
-            if(plannedPath != null)
-            {
-                currentPath = plannedPath;
-                plannedPath = null;
-                if (currentPath.Count > 0)
-                    currentTarget = currentPath[0];
-            }
+            //if(plannedPath != null)
+            //{
+            //    currentPath = plannedPath;
+            //    plannedPath = null;
+            //    if (currentPath.Count > 0)
+            //        currentTarget = currentPath[0];
+            //}
         //}
         return currentTarget != null;
     }
