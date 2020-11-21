@@ -21,13 +21,13 @@ namespace Assets.Scripts.AI.Pathfinding
 
         private static float Heur(PathNode node1, PathNode node2)
         {
-            float angle = Vector3.Angle(node1.Direction, node2.Position - node1.Position) * Mathf.Deg2Rad;
+            float angle = Mathf.Abs(Vector3.Angle(node1.Direction, node2.Position - node1.Position)) * Mathf.Deg2Rad;
             return node1.Distance(node2) + Mathf.Abs(angle);
         }
 
         public static List<PathNode> GetNeighbours(PathNode node, MovementProperties properties)
         {
-            float step = 5f;
+            float step = 1f;
             float angle = 1f;
             List<PathNode> result = new List<PathNode>();
             NavMeshHit currentArea;
@@ -43,13 +43,13 @@ namespace Assets.Scripts.AI.Pathfinding
             
             PathNode next2 = new PathNode(node.Position);
             next2.Direction = Quaternion.Euler(0, Mathf.Rad2Deg * angle, 0) * next2.Direction;
-            //if (CheckWalkable(next2.Position, currentArea.mask))
-            //    result.Add(next2);
+            if (CheckWalkable(next2.Position, currentArea.mask))
+                result.Add(next2);
 
             PathNode next3 = new PathNode(node.Position);
             next3.Direction = Quaternion.Euler(0, Mathf.Rad2Deg * -angle, 0) * next3.Direction;
-            //if (CheckWalkable(next3.Position, currentArea.mask))
-            //    result.Add(next3);
+            if (CheckWalkable(next3.Position, currentArea.mask))
+                result.Add(next3);
 
             PathNode next4 = new PathNode(node.Position + next2.Direction * step);
             next4.Direction = next2.Direction;
@@ -71,7 +71,8 @@ namespace Assets.Scripts.AI.Pathfinding
         public static List<PathNode> GetLocalRoute(
             PathNode target, 
             PathNode position, 
-            MovementProperties movementProperties
+            MovementProperties movementProperties,
+            GameObject debugPoint
             )
         {
             if (position.Position.Equals(target.Position))
@@ -117,6 +118,8 @@ namespace Assets.Scripts.AI.Pathfinding
                             opened.Remove(nextNode);
                         opened.Enqueue(nextNode, heur);
                     }
+
+                    Debug.DrawLine(currentNode.Position, nextNode.Position);
                 }
             }
 

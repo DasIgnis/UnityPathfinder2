@@ -7,7 +7,7 @@ public class BotMovement : MonoBehaviour
 {
     public GameObject terrain;
 
-    public GameObject DEBUGSHIT;
+    public GameObject DEBUG;
 
     /// <summary>
     /// Запланированный путь как список точек маршрута
@@ -107,11 +107,11 @@ public class BotMovement : MonoBehaviour
             var milestone = GlobalPlanner.GetGlobalRoute(globalTarget, currentPathNode);
             if (milestone != null)
             {
-                currentPath = LocalPlanner.GetLocalRoute(globalTarget, currentPathNode, movementProperties);
+                currentPath = LocalPlanner.GetLocalRoute(globalTarget, currentPathNode, movementProperties, DEBUG);
                 //Для дебага и прочих шалостей
                 for (int i = 0; i < currentPath.Count; i++)
                 {
-                    Instantiate(DEBUGSHIT, currentPath[i].Position, Quaternion.identity);
+                    Instantiate(DEBUG, currentPath[i].Position, Quaternion.identity);
                 }
             }
         }
