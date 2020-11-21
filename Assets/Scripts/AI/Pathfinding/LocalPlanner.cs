@@ -71,8 +71,7 @@ namespace Assets.Scripts.AI.Pathfinding
         public static List<PathNode> GetLocalRoute(
             PathNode target, 
             PathNode position, 
-            MovementProperties movementProperties,
-            GameObject debugPoint
+            MovementProperties movementProperties
             )
         {
             if (position.Position.Equals(target.Position))
@@ -118,8 +117,6 @@ namespace Assets.Scripts.AI.Pathfinding
                             opened.Remove(nextNode);
                         opened.Enqueue(nextNode, heur);
                     }
-
-                    Debug.DrawLine(currentNode.Position, nextNode.Position);
                 }
             }
 

@@ -2141,6 +2141,10 @@ PrefabInstance:
       propertyPath: DEBUGSHIT
       value: 
       objectReference: {fileID: 8102242300322618820, guid: 6052cf2b3f2c6e24fb4abe0077c96930, type: 3}
+    - target: {fileID: -7959341500492220352, guid: 041ccb340345b9e478f98f4a94533019, type: 3}
+      propertyPath: DEBUG
+      value: 
+      objectReference: {fileID: 8102242300322618820, guid: 6052cf2b3f2c6e24fb4abe0077c96930, type: 3}
     - target: {fileID: 189103177906200926, guid: 041ccb340345b9e478f98f4a94533019, type: 3}
       propertyPath: m_Layer
       value: 9

@@ -107,7 +107,7 @@ public class BotMovement : MonoBehaviour
             var milestone = GlobalPlanner.GetGlobalRoute(globalTarget, currentPathNode);
             if (milestone != null)
             {
-                currentPath = LocalPlanner.GetLocalRoute(globalTarget, currentPathNode, movementProperties, DEBUG);
+                currentPath = LocalPlanner.GetLocalRoute(globalTarget, currentPathNode, movementProperties);
                 //Для дебага и прочих шалостей
                 for (int i = 0; i < currentPath.Count; i++)
                 {
