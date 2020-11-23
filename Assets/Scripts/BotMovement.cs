@@ -79,15 +79,19 @@ public class BotMovement : MonoBehaviour
             float distanceToTarget = currentTarget.Distance(transform.position);
             if (distanceToTarget >= movementProperties.epsilon)//|| currentTarget.TimeMoment - Time.fixedTime > movementProperties.epsilon) 
                 return true;
-            Debug.Log("Point reached : " + Time.fixedTime.ToString());
-            currentPath.RemoveAt(0);
-            if (currentPath.Count > 0) 
+            //Debug.Log("Point reached : " + Time.fixedTime.ToString());
+            if (currentPath != null)
             {
-                currentTarget = currentPath[0];
-                return true;
+                if (currentPath.Count > 0) currentPath.RemoveAt(0);
+                if (currentPath.Count > 0)
+                {
+                    currentTarget = currentPath[0];
+                    return true;
+                }
             }
             else
             {
+                currentTarget = null;
                 // TODO:
                 // Если мы сюда пришли, то мы находимся либо в цели, либо на границе регионов, куда нас направил глобальный планировщик
                 // Снова дёргаем планировщика, если вернул не null, то 
@@ -205,6 +209,7 @@ public class BotMovement : MonoBehaviour
             {
                 globalTarget = new BaseAI.PathNode(hit.point);
                 targetUpdated = true;
+                Instantiate(DEBUG, globalTarget.Position, Quaternion.identity);
             }
         }
 

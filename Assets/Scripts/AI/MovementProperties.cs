@@ -14,13 +14,13 @@ namespace BaseAI
         /// </summary>
         public float maxSpeed;
         /// <summary>
-        /// Максимальный угол поворота агента
+        /// Шаг поворота агента в градусах
         /// </summary>
         public float rotationAngle;
         /// <summary>
-        /// Количество дискретных углов поворота
+        /// Количество дискретных углов поворота в одну сторону. 0 - только движение вперёд, 1 - влево/прямо/вправо, и т.д.
         /// </summary>
-        public int angleSteps;  
+        public int angleSteps;
         /// <summary>
         /// Длина прыжка (фиксированная)
         /// </summary>
@@ -29,6 +29,11 @@ namespace BaseAI
         /// эпсилон-окрестность точки, в пределах которой точка считается достигнутой
         /// </summary>
         public float epsilon = 0.1f;
+
+        /// <summary>
+        /// Дельта времени (шаг по времени), с которой строится маршрут
+        /// </summary>
+        public float deltaTime = 0.5f;
 
         public float algorithmStep = 3f;
 
