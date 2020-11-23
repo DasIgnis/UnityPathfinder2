@@ -24,7 +24,7 @@ namespace Assets.Scripts.AI.Pathfinding
             //  Эвристику переделать - это пройденное время + оставшееся
             float angle = Mathf.Abs(Vector3.Angle(node1.Direction, node2.Position - node1.Position)) / properties.rotationAngle;
             //return node1.Distance(node2) + Mathf.Abs(angle);
-            return node1.TimeMoment + 10*node1.Distance(node2)/properties.maxSpeed + angle*properties.deltaTime;
+            return node1.TimeMoment + 2*node1.Distance(node2)/properties.maxSpeed + angle*properties.deltaTime;
         }
 
         public static List<PathNode> GetNeighbours(PathNode node, MovementProperties properties)
@@ -55,7 +55,7 @@ namespace Assets.Scripts.AI.Pathfinding
                     if (CheckWalkable(next.Position, currentArea.mask))
                     {
                         result.Add(next);
-                        //Debug.DrawLine(node.Position, next.Position);
+                        Debug.DrawLine(node.Position, next.Position, Color.white, 10f);
                     }
                 }
             //Debug.Log("Children spawned : " + result.Count.ToString());
@@ -84,7 +84,11 @@ namespace Assets.Scripts.AI.Pathfinding
             opened.Enqueue(position, 0);
             int steps = 0;
 
-            
+
+            //  Посещенные узлы (с некоторым шагом, аналог сетки)
+            HashSet<(int, int, int, int)> closed = new HashSet<(int, int, int, int)>();
+            closed.Add(position.ToGrid4DPoint(movementProperties.deltaDist, movementProperties.deltaTime));
+
             PathNode last = opened.First;
 
             while (opened.Count != 0 && steps < 5000)
@@ -93,12 +97,12 @@ namespace Assets.Scripts.AI.Pathfinding
                 PathNode currentNode = opened.Dequeue();
 
                 last = currentNode;
-                //closed.Add((currentNode.Position, currentNode.Direction));  //  Для Sample-based список closed не нужен
+                //closed.Add(currentNode.ToGrid4DPoint(movementProperties.deltaDist, movementProperties.deltaTime));  //  Для Sample-based список closed не нужен
 
-                //  Меняем на epsilon
+                //  Тут что-то более сложное
                 if (currentNode.EqualsSigma(target, movementProperties.epsilon))
                 {
-                    Debug.Log("Braked by closest point");
+                    Debug.Log("Braked by closest point. Steps : " + steps.ToString());
                     break;
                 }
 
@@ -106,21 +110,26 @@ namespace Assets.Scripts.AI.Pathfinding
                 var neighbours = GetNeighbours(currentNode, movementProperties);
                 foreach (var nextNode in neighbours)
                 {
-                    nextNode.H = Heur(nextNode, target, movementProperties);
-                    opened.Enqueue(nextNode, nextNode.H);
+                    var discreteNode = nextNode.ToGrid4DPoint(movementProperties.deltaDist, movementProperties.deltaTime);
+                    if (!closed.Contains(discreteNode))
+                    {
+                        nextNode.H = Heur(nextNode, target, movementProperties);
+                        opened.Enqueue(nextNode, nextNode.H);
+                        closed.Add(discreteNode);
+                    }
                 }
             }
-
+            
             if (last.EqualsSigma(target, movementProperties.epsilon) == false)
             {
-                Debug.Log("Failed to build a way");
+                Debug.Log("Failed to build a way. Steps : " + steps.ToString());
                 return new List<PathNode>();
             }
 
             List<PathNode> result = new List<PathNode>();
 
             //  Восстанавливаем путь от целевой к стартовой
-            //  Тут ещё надо бы добавить конечную точку отдельно, но можно этого не делать
+            //  Может, заменить последнюю на целевую, с той же отметкой по времени? Но тогда с поворотом сложновато получается
             var pathElem = last;
             while (pathElem != null)
             {

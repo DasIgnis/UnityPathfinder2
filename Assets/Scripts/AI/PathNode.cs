@@ -101,5 +101,13 @@ namespace BaseAI
             return result;
         }
 
+        public (int,int,int,int) ToGrid4DPoint(float distDelta, float timeDelta)
+        {
+            return (Mathf.RoundToInt(Position.x / distDelta),
+                Mathf.RoundToInt(Position.y / distDelta),
+                Mathf.RoundToInt(Position.z / distDelta),
+                Mathf.RoundToInt(TimeMoment / timeDelta));
+        }
+
     }
 }

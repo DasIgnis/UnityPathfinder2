@@ -35,7 +35,10 @@ namespace BaseAI
         /// </summary>
         public float deltaTime = 0.5f;
 
-        public float algorithmStep = 3f;
+        /// <summary>
+        /// Шаг по пространству, с которым происходит дискретизация области (для отсечения посещённых точек)
+        /// </summary>
+        public float deltaDist = 1f;
 
     }
 
