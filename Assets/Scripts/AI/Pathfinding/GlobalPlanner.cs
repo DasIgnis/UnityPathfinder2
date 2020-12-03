@@ -11,35 +11,77 @@ namespace Assets.Scripts.AI.Pathfinding
 {
     public static class GlobalPlanner
     {
-        public static PathNode GetGlobalRoute(PathNode target, PathNode position)
+        public static PathNode GetGlobalRoute(PathNode target, PathNode position, MovementProperties movementProperties)
         {
             NavMeshHit targetArea;
             if (!NavMesh.SamplePosition(target.Position, out targetArea, 1f, NavMesh.AllAreas))
                 return null;
 
-            NavMeshHit currentArea;
             Vector3 adjustedPosition = new Vector3(position.Position.x, targetArea.position.y, position.Position.z);
+            if (target.Distance(adjustedPosition) < movementProperties.epsilon)
+                return null;
+
+            NavMeshHit currentArea;
             if (!NavMesh.SamplePosition(adjustedPosition, out currentArea, 1f, NavMesh.AllAreas))
                 return null;
 
             if (currentArea.mask == targetArea.mask)
+            {
+                target.RegionId = currentArea.mask;
                 return target;
+            }
 
-            //Если мы в точке выхода текущей зоны, то вернуть точку входа следующей зоны
-            
-            //TODO:
-            //Здесь берем список всех зон, для каждой вычисляем цену прохождения и строим оптимальный маршрут
-            //Ценой пусть будет время, которое мы затратим для прохождения. Соответственно для простых зон что-то вроде 
-            //расстояние от входа до выхода / скорость, 
-            //для зоны с платформой время, за которое она повернется от её позиции на момент достижения предыдущей границы
-            //до границы следующей за ней зоны
+            //TODO: Здесь надо реализовать простой волновой алгоритм, согласно которому мы выбираем следующую точку
+            //В результате работы волнового алгоритма мы получим список регионов, по которым мы должны пройти
+            //Берём следующий регион, куда мы должны прийти
 
-            //Соответственно, для каждой зоны мы знаем точку входа и точку выхода, их на карте можно просто поставить в виде кружочков и прописать в явном виде
-            //Для платформы нужна динамическая точка входа, либо точка входа не динамическая, но с таймаутом - когда мы сможем прыгнуть
-            //После того, как мы получили маршрут по зонам, возвращаем ближайшую точку входа
-            //Возможно имеет смысл мемоизировать построенный маршрут
+            Cartographer cartographer = new Cartographer();
+            var neighbours = cartographer.GetNeighbours(currentArea.mask, adjustedPosition);
 
-            
+            neighbours.Reverse();
+
+            if (neighbours.Count > 1 && neighbours[0].PathPoints.Count > 0)
+            {
+                var nextRegion = neighbours[0];
+                //TODO: 
+                //Этот код для региона, куда мы должны пойти, определяет дальнейшую точку маршрута планировщика
+                //Здесь везде вместо neighbours[0] должен быть регион, куда мы идем
+                //Для простых регионов мы просто определяем, в какую сторону должен воевать локальный планировщик
+                if (nextRegion.Type == RegionType.Stable)
+                {
+                    NavMeshHit moveTo;
+                    //Ищем ближайшую точку текущего региона, соседствующаю с целевым регионом
+                    if (NavMesh.SamplePosition(nextRegion.PathPoints[0], out moveTo, 20, currentArea.mask))
+                    {
+                        //Если мы в данный момент находимся близко к найденной точке, то мы на границе
+                        //В этом случае возвращаем точку из соседнего региона
+                        if (Math.Abs(moveTo.position.x - adjustedPosition.x) < movementProperties.deltaTime * movementProperties.maxSpeed
+                            && Math.Abs(moveTo.position.y - adjustedPosition.y) < movementProperties.deltaTime * movementProperties.maxSpeed)
+                        {
+                            var node = new PathNode(nextRegion.PathPoints[0]);
+                            node.RegionId = nextRegion.Index;
+                            return node;
+                        }
+                        //Иначе мы возвращаем ближайшую к цели точку из текущего региона, чтобы скормить локальному планировщику
+                        else
+                        {
+                            var node = new PathNode(moveTo.position);
+                            node.RegionId = currentArea.mask;
+                            return node;
+                        }
+                    };
+                } 
+                else if (nextRegion.Type == RegionType.Moving)
+                {
+                    PathNode regionExit = null;
+                    foreach (var exit in ((MovingRegion)nextRegion).ExitPoints)
+                    {
+
+                    }
+                }
+                
+                return new PathNode(neighbours[0].PathPoints[0]);
+            }           
 
             return null;
         }

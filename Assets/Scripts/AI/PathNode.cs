@@ -31,6 +31,8 @@ namespace BaseAI
         public float G { get; set; }  //  Пройденный путь от цели
         public float H { get; set; }  //  Планируемый путь до цели
 
+        public int RegionId { get; set; }
+
         /// <summary>
         /// Конструирование вершины на основе родительской (если она указана)
         /// </summary>

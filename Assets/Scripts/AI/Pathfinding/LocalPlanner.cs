@@ -84,7 +84,6 @@ namespace Assets.Scripts.AI.Pathfinding
             opened.Enqueue(position, 0);
             int steps = 0;
 
-
             //  Посещенные узлы (с некоторым шагом, аналог сетки)
             HashSet<(int, int, int, int)> closed = new HashSet<(int, int, int, int)>();
             closed.Add(position.ToGrid4DPoint(movementProperties.deltaDist, movementProperties.deltaTime));

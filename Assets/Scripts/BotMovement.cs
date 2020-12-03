@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class BotMovement : MonoBehaviour
 {
@@ -76,7 +77,8 @@ public class BotMovement : MonoBehaviour
     {
         if(currentTarget != null)
         {
-            float distanceToTarget = currentTarget.Distance(transform.position);
+            Vector3 dummyPosition = new Vector3(transform.position.x, currentTarget.Position.y, transform.position.z);
+            float distanceToTarget = currentTarget.Distance(dummyPosition);
             if (distanceToTarget >= movementProperties.epsilon)//|| currentTarget.TimeMoment - Time.fixedTime > movementProperties.epsilon) 
                 return true;
             //Debug.Log("Point reached : " + Time.fixedTime.ToString());
@@ -99,7 +101,30 @@ public class BotMovement : MonoBehaviour
                 // 2) если в той же, то скармливает её локалпланнеру и возвращаем этот маршрут
                 // 3) если нет, то мы на границе зон. Сразу присваиваем точку из глобального планировщика currentTarget
                 // Не исключено, что из этой ф-ции имеет смысл возвращать не бульку, а enum со статусом работы
-
+                var currentPathNode = new BaseAI.PathNode(transform.position);
+                var milestone = GlobalPlanner.GetGlobalRoute(globalTarget, currentPathNode, movementProperties);
+                if (milestone != null)
+                {
+                    NavMeshHit currentArea;
+                    Vector3 adjustedPosition = new Vector3(transform.position.x, milestone.Position.y, transform.position.z);
+                    if (NavMesh.SamplePosition(adjustedPosition, out currentArea, 1f, NavMesh.AllAreas))
+                    {
+                        if (currentArea.mask == milestone.RegionId)
+                        {
+                            currentPath = LocalPlanner.GetLocalRoute(milestone, currentPathNode, movementProperties);
+                            //Для дебага и прочих шалостей
+                            for (int i = 0; i < currentPath.Count; i++)
+                            {
+                                Instantiate(DEBUG, currentPath[i].Position, Quaternion.identity);
+                            }
+                        }
+                        else
+                        {
+                            currentTarget = milestone;
+                            return true;
+                        }
+                    }
+                }
             }
         }
         else 
@@ -108,10 +133,10 @@ public class BotMovement : MonoBehaviour
             targetUpdated = false;
             var currentPathNode = new BaseAI.PathNode(transform.position);
             //Пример получения майлстоуна от планировщика
-            var milestone = GlobalPlanner.GetGlobalRoute(globalTarget, currentPathNode);
+            var milestone = GlobalPlanner.GetGlobalRoute(globalTarget, currentPathNode, movementProperties);
             if (milestone != null)
             {
-                currentPath = LocalPlanner.GetLocalRoute(globalTarget, currentPathNode, movementProperties);
+                currentPath = LocalPlanner.GetLocalRoute(milestone, currentPathNode, movementProperties);
                 //Для дебага и прочих шалостей
                 for (int i = 0; i < currentPath.Count; i++)
                 {
