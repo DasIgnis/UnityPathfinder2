@@ -78,6 +78,7 @@ namespace Assets.Scripts.AI.Pathfinding
                     }
                 }
             }
+            path.Reverse();
             return path;
         }
 
