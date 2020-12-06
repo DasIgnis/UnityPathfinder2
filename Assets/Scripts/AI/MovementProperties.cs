@@ -40,6 +40,8 @@ namespace BaseAI
         /// </summary>
         public float deltaDist = 1f;
 
+
+        public float jumpForce = 1f;
     }
 
 

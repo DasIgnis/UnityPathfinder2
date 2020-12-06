@@ -33,6 +33,8 @@ namespace BaseAI
 
         public int RegionId { get; set; }
 
+        public bool JumpingPosition { get; set; }
+
         /// <summary>
         /// Конструирование вершины на основе родительской (если она указана)
         /// </summary>

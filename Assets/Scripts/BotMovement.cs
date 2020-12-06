@@ -12,6 +12,8 @@ public class BotMovement : MonoBehaviour
 
     private GlobalPlanner globalPlanner = new GlobalPlanner();
 
+    private bool isJumping = false;
+
     /// <summary>
     /// Запланированный путь как список точек маршрута
     /// </summary>
@@ -79,6 +81,12 @@ public class BotMovement : MonoBehaviour
     {
         if(currentTarget != null)
         {
+            if (currentTarget.JumpingPosition)
+            {
+                currentTarget = globalPlanner.GetGlobalRoute(globalTarget, new BaseAI.PathNode(transform.position), movementProperties);
+                return true;
+            }
+
             Vector3 dummyPosition = new Vector3(transform.position.x, currentTarget.Position.y, transform.position.z);
             float distanceToTarget = currentTarget.Distance(dummyPosition);
             if (distanceToTarget >= movementProperties.epsilon)//|| currentTarget.TimeMoment - Time.fixedTime > movementProperties.epsilon) 
@@ -95,14 +103,12 @@ public class BotMovement : MonoBehaviour
             }
             else
             {
-                currentTarget = null;
-                // TODO:
+                //currentTarget = null;
                 // Если мы сюда пришли, то мы находимся либо в цели, либо на границе регионов, куда нас направил глобальный планировщик
                 // Снова дёргаем планировщика, если вернул не null, то 
                 // 1) смотрим, в той же что и мы зоне вернувшаяся точка
                 // 2) если в той же, то скармливает её локалпланнеру и возвращаем этот маршрут
                 // 3) если нет, то мы на границе зон. Сразу присваиваем точку из глобального планировщика currentTarget
-                // Не исключено, что из этой ф-ции имеет смысл возвращать не бульку, а enum со статусом работы
                 var currentPathNode = new BaseAI.PathNode(transform.position);
                 var milestone = globalPlanner.GetGlobalRoute(globalTarget, currentPathNode, movementProperties);
                 if (milestone != null)
@@ -126,6 +132,10 @@ public class BotMovement : MonoBehaviour
                             return true;
                         }
                     }
+                }
+                else
+                {
+                    currentTarget = null;
                 }
             }
         }
@@ -189,6 +199,40 @@ public class BotMovement : MonoBehaviour
             return false;
         }
 
+        if (isJumping)
+        {
+            return false;
+        }
+
+        if (currentTarget.JumpingPosition)
+        {
+            Vector3 dummyPosition = new Vector3(transform.position.x, currentTarget.Position.y, transform.position.z);
+            float distanceToTarget = currentTarget.Distance(dummyPosition);
+
+            if ( transform.parent != null &&
+                transform.parent.gameObject.layer == LayerMask.NameToLayer("MovingPlatform"))
+            {
+                Vector3 directionToPlatform = currentTarget.Position - transform.position;
+                float platformAngle = Vector3.SignedAngle(transform.forward, directionToPlatform, Vector3.up);
+                platformAngle = Mathf.Clamp(platformAngle, -movementProperties.rotationAngle, movementProperties.rotationAngle);
+                transform.Rotate(Vector3.up, platformAngle);
+            }
+                 
+            if (distanceToTarget > movementProperties.jumpLength)
+            {
+                return false;
+            }
+            else
+            {
+                Vector3 directionToPlatform = currentTarget.Position - transform.position;
+                float platformAngle = Vector3.SignedAngle(transform.forward, directionToPlatform, Vector3.up);
+                platformAngle = Mathf.Clamp(platformAngle, -movementProperties.rotationAngle, movementProperties.rotationAngle);
+                transform.Rotate(Vector3.up, platformAngle);
+                Jump();
+                return false;
+            }
+        }
+
         //  Ну у нас тут точно есть целевая точка, вот в неё и пойдём
         //  Определяем угол поворота, и расстояние до целевой
         Vector3 directionToTarget = currentTarget.Position - transform.position;
@@ -206,22 +250,38 @@ public class BotMovement : MonoBehaviour
         //  Надо как-то следить за скоростью, она не может превышать расстояние до целевой точки???
         transform.Rotate(Vector3.up, angle);
 
-        //  Время прибытия - оставшееся время
-        //var remainedTime = currentTarget.TimeMoment - Time.fixedTime;
-        //if (remainedTime < movementProperties.epsilon)
-        //{
         transform.position = transform.position + actualStep * transform.forward;
-        //}
-        //else
-        //{
-        //    //  Дедлайн ещё не скоро!!! Стоим спим
-        //    if (currentTarget.Distance(transform.position) < movementProperties.epsilon) return true;
 
-        //    transform.position = transform.position + actualStep * transform.forward / remainedTime;
-        //}
         return true;
     }
 
+    void Jump()
+    {
+        var rb = GetComponent<Rigidbody>();
+        //  Сбрасываем скорость перед прыжком
+        rb.velocity = Vector3.zero;
+        var jump = 1.5f * transform.forward + 0.3f * transform.up;
+        float jumpForce = movementProperties.jumpForce;
+        rb.AddForce(jump * jumpForce, ForceMode.VelocityChange);
+        isJumping = true;
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.layer == LayerMask.NameToLayer("MovingPlatform"))
+        {
+            transform.parent = collision.gameObject.transform;
+        }
+        else
+        {
+            transform.parent = null;
+        }
+        var rb = GetComponent<Rigidbody>();
+        //  Сбрасываем скорость перед прыжком
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        isJumping = false;
+    }
 
     /// <summary>
     /// Вызывается каждый кадр
