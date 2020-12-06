@@ -13,45 +13,115 @@ namespace Assets.Scripts.AI.Pathfinding
     {
         private List<Region> globalPath = new List<Region>();
 
-        public List<PathNode> GetNextPoint(Region start, Region target, List<Region> points)
+        public Dictionary<Region, Dictionary<Region, float>> InitDijkstraVertices(List<Region> regions)
         {
+            var res = new Dictionary<Region, Dictionary<Region, float>>();
 
-            List<PathNode> res = new List<PathNode>();
-            Dictionary<Region, int> marks = new Dictionary<Region, int>();
-            int markVal = 0;
-            marks.Add(start, markVal);
+            Cartographer cartographer = new Cartographer();
 
-            while (!(marks.ContainsKey(target)) && marks.Keys.ToList() != points) //пока не пометили таргет и пока не пометили вообще всё
+            foreach (Region reg in regions)
             {
-                var markedRegions = marks.Where(el => el.Value == 0).ToList().Select(x => x.Key); // берем точки, помеченные числом d
-
-                foreach (var reg in markedRegions)
+                var neighbours = cartographer.GetNeighbours(reg.Index, reg.PathPoints.First());
+                var neighboursDict = new Dictionary<Region, float>();
+                foreach (var n in neighbours)
                 {
-                    Cartographer cartographer = new Cartographer();
-                    var neighbours = cartographer.GetNeighbours(reg.Index, reg.PathPoints.First()); //по какой точке брать соседей?
-
-                    foreach (var unmarked in neighbours)
-                        marks.Add(unmarked, markVal + 1); //помечаем все эти точки числом d+1
-                }
-                markVal += 1;
-            }
-
-            if (marks.ContainsKey(target))
-            {
-                var current = target;
-
-                while (current != start)
-                {
-                    Cartographer cartographer = new Cartographer();
-                    var neighbours = cartographer.GetNeighbours(current.Index, current.PathPoints.First());
-
-                    //var next = marks.First(p => neighbours.Contains(p) && marks[p] == (marks[current] - 1)); //
-                    //res.Add(next);
-                    //current = next;
+                    neighboursDict.Add(n, n.Price);
+                    res[reg] = neighboursDict;
                 }
             }
-            return res; //возвращаем путь или пустой список
+            return res;
         }
+
+        public List<Region> GetPathWithDijkstra(Region start, Region target, List<Region> points)
+        {
+            var prevRegions = new Dictionary<Region, Region>();
+            var distances = new Dictionary<Region, float>();
+            var nodes = new List<Region>();
+
+            List<Region> path = null;
+
+            var vertices = InitDijkstraVertices(points);
+
+            foreach (var reg in vertices)
+            {
+                distances[reg.Key] = reg.Key == start ? 0 : int.MaxValue;
+                nodes.Add(reg.Key);
+            }
+
+            while (nodes.Count != 0)
+            {
+                nodes.Sort((x, y) => (int)(distances[x] - distances[y])); //опасное приведение типов?
+
+                var min = nodes[0];
+                nodes.Remove(min);
+
+                if (min == target)
+                {
+                    path = new List<Region>();
+                    while (prevRegions.ContainsKey(min))
+                    {
+                        path.Add(min);
+                        min = prevRegions[min];
+                    }
+                    break;
+                }
+
+                if (distances[min] == int.MaxValue)
+                    break;
+
+                foreach (var neighbour in vertices[min])
+                {
+                    var alt = distances[min] + neighbour.Value;
+                    if (alt < distances[neighbour.Key])
+                    {
+                        distances[neighbour.Key] = alt;
+                        prevRegions[neighbour.Key] = min;
+                    }
+                }
+            }
+            path.Reverse();
+            return path;
+        }
+
+        //public static List<Region> GetNextPoint(Region start, Region target, List<Region> points)
+        //{
+
+        //    List<Region> res = new List<Region>();
+        //    Dictionary<Region, int> marks = new Dictionary<Region, int>();
+        //    int markVal = 0;
+        //    marks.Add(start, markVal);
+
+        //    while (!(marks.ContainsKey(target)) && marks.Keys.ToList() != points) //пока не пометили таргет и пока не пометили вообще всё
+        //    {
+        //        var markedRegions = marks.Where(el => el.Value == markVal).ToList().Select(x => x.Key); // берем точки, помеченные числом d
+
+        //        foreach (var reg in markedRegions)
+        //        {
+        //            Cartographer cartographer = new Cartographer();
+        //            var neighbours = cartographer.GetNeighbours(reg.Index, reg.PathPoints.First()); //по какой точке брать соседей?
+
+        //            foreach (var unmarked in neighbours)
+        //                marks.Add(unmarked, markVal + 1); //помечаем все эти точки числом d+1
+        //        }
+        //        markVal += 1;
+        //    }
+
+        //    if (marks.ContainsKey(target))
+        //    {
+        //        var current = target;
+
+        //        while (current != start)
+        //        {
+        //            Cartographer cartographer = new Cartographer();
+        //            var neighbours = cartographer.GetNeighbours(current.Index, current.PathPoints.First());
+
+        //            var next = marks.First(p => neighbours.Contains(p.Key) && marks[p.Key] == (marks[current] - 1)).Key; //
+        //            res.Add(next);
+        //            current = next;
+        //        }
+        //    }
+        //    return res; //возвращаем путь или пустой список
+        //}
 
         public PathNode GetGlobalRoute(PathNode target, PathNode position, MovementProperties movementProperties)
         {
@@ -87,8 +157,7 @@ namespace Assets.Scripts.AI.Pathfinding
 
             if (globalPath.Count == 0)
             {
-                globalPath.AddRange(cartographer.GetNeighbours(8, position.Position));
-                globalPath.AddRange(cartographer.GetNeighbours(64, globalPath[0].PathPoints[0]));
+                globalPath = new List<Region>();
             }
 
             if (globalPath.Count != 0)
