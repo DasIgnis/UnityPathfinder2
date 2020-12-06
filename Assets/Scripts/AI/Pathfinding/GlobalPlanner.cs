@@ -22,12 +22,12 @@ namespace Assets.Scripts.AI.Pathfinding
 
             while (!(marks.ContainsKey(target)) && marks.Keys.ToList() != points) //пока не пометили таргет и пока не пометили вообще всё
              {
-                var markedRegions = marks.Where(el => el.Value == d).ToList().Select(x => x.Key); // берем точки, помеченные числом d
+                var markedRegions = marks.Where(el => el.Value == markVal).ToList().Select(x => x.Key); // берем точки, помеченные числом d
 
                 foreach (var reg in markedRegions)
                 {
                     Cartographer cartographer = new Cartographer();
-                    var neighbours = cartographer.GetNeighbours(reg.Index, reg.PathPoints.First); //по какой точке брать соседей?
+                    var neighbours = cartographer.GetNeighbours(reg.Index, reg.PathPoints.First()); //по какой точке брать соседей?
 
                     foreach (var unmarked in neighbours)
                         marks.Add(unmarked, markVal + 1); //помечаем все эти точки числом d+1
@@ -44,7 +44,7 @@ namespace Assets.Scripts.AI.Pathfinding
                     Cartographer cartographer = new Cartographer();
                     var neighbours = cartographer.GetNeighbours(current.Index, current.PathPoints.First());
 
-                    var next = marks.First(p => neighbours.Contains(p) && marks[p] == (marks[current] - 1)); //
+                    var next = marks.First(p => neighbours.Contains(p.Key) && marks[p.Key] == (marks[current] - 1)); //
                     res.Add(next);
                     current = next;
                 }
