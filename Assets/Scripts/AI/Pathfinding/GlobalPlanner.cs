@@ -9,10 +9,11 @@ using UnityEngine.AI;
 
 namespace Assets.Scripts.AI.Pathfinding
 {
-    public static class GlobalPlanner
+    public class GlobalPlanner
     {
+        private List<Region> globalPath = new List<Region>();
 
-        public static List<PathNode> GetNextPoint(Region start, Region target, List<Region> points)
+        public List<PathNode> GetNextPoint(Region start, Region target, List<Region> points)
         {
 
             List<PathNode> res = new List<PathNode>();
@@ -22,12 +23,12 @@ namespace Assets.Scripts.AI.Pathfinding
 
             while (!(marks.ContainsKey(target)) && marks.Keys.ToList() != points) //пока не пометили таргет и пока не пометили вообще всё
              {
-                var markedRegions = marks.Where(el => el.Value == d).ToList().Select(x => x.Key); // берем точки, помеченные числом d
+                var markedRegions = marks.Where(el => el.Value == 0).ToList().Select(x => x.Key); // берем точки, помеченные числом d
 
                 foreach (var reg in markedRegions)
                 {
                     Cartographer cartographer = new Cartographer();
-                    var neighbours = cartographer.GetNeighbours(reg.Index, reg.PathPoints.First); //по какой точке брать соседей?
+                    var neighbours = cartographer.GetNeighbours(reg.Index, reg.PathPoints.First()); //по какой точке брать соседей?
 
                     foreach (var unmarked in neighbours)
                         marks.Add(unmarked, markVal + 1); //помечаем все эти точки числом d+1
@@ -44,15 +45,15 @@ namespace Assets.Scripts.AI.Pathfinding
                     Cartographer cartographer = new Cartographer();
                     var neighbours = cartographer.GetNeighbours(current.Index, current.PathPoints.First());
 
-                    var next = marks.First(p => neighbours.Contains(p) && marks[p] == (marks[current] - 1)); //
-                    res.Add(next);
-                    current = next;
+                    //var next = marks.First(p => neighbours.Contains(p) && marks[p] == (marks[current] - 1)); //
+                    //res.Add(next);
+                    //current = next;
                 }
             }
             return res; //возвращаем путь или пустой список
         }
 
-        public static PathNode GetGlobalRoute(PathNode target, PathNode position, MovementProperties movementProperties)
+        public PathNode GetGlobalRoute(PathNode target, PathNode position, MovementProperties movementProperties)
         {
             NavMeshHit targetArea;
             if (!NavMesh.SamplePosition(target.Position, out targetArea, 1f, NavMesh.AllAreas))
@@ -72,22 +73,24 @@ namespace Assets.Scripts.AI.Pathfinding
                 return target;
             }
 
-            //TODO: Здесь надо реализовать простой волновой алгоритм, согласно которому мы выбираем следующую точку
-            //В результате работы волнового алгоритма мы получим список регионов, по которым мы должны пройти
-            //Берём следующий регион, куда мы должны прийти
-
             Cartographer cartographer = new Cartographer();
-            var neighbours = cartographer.GetNeighbours(currentArea.mask, adjustedPosition);
 
-            neighbours.Reverse();
-
-            if (neighbours.Count > 1 && neighbours[0].PathPoints.Count > 0)
+            if (globalPath.Count == 0)
             {
-                var nextRegion = neighbours[0];
-                //TODO: 
-                //Этот код для региона, куда мы должны пойти, определяет дальнейшую точку маршрута планировщика
-                //Здесь везде вместо neighbours[0] должен быть регион, куда мы идем
-                //Для простых регионов мы просто определяем, в какую сторону должен воевать локальный планировщик
+                globalPath.AddRange(cartographer.GetNeighbours(8, position.Position));
+                globalPath.AddRange(cartographer.GetNeighbours(128, globalPath[0].PathPoints[0]));
+            }
+
+            if (globalPath.Count != 0)
+            {
+                var nextRegion = globalPath.First();
+
+                if (currentArea.mask == nextRegion.Index)
+                {
+                    globalPath.RemoveAt(0);
+                    nextRegion = globalPath.First();
+                }
+
                 if (nextRegion.Type == RegionType.Stable)
                 {
                     NavMeshHit moveTo;
@@ -121,7 +124,7 @@ namespace Assets.Scripts.AI.Pathfinding
                     }
                 }
 
-                return new PathNode(neighbours[0].PathPoints[0]);
+                return new PathNode(nextRegion.PathPoints[0]);
             }
 
             return null;

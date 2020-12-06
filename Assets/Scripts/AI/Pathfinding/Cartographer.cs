@@ -40,15 +40,17 @@ namespace Assets.Scripts.AI.Pathfinding
         public Cartographer()
         {
             regions.Add(new Region { Index = 8, Type = RegionType.Stable });
-            regions.Add(new MovingRegion { 
+            /*regions.Add(new MovingRegion { 
                 Index = 64, 
                 Type = RegionType.Moving, 
                 EntryPoint = GameObject.Find("Platform1Entry"),
                 ExitPoints = new List<GameObject> { GameObject.Find("Platform1TerrainExit1"), GameObject.Find("Platform1TerrainExit2") }
-            });;
+            });;*/
             regions.Add(new Region { Index = 128, Type = RegionType.Stable });
+            regions.Add(new Region { Index = 16, Type = RegionType.Stable });
 
-            neigbours.Add(8, new List<int> { 64, 128 });
+            neigbours.Add(8, new List<int> { 128 });
+            neigbours.Add(128, new List<int> { 16 });
         }
 
         public List<Region> GetNeighbours(int regionIndex, Vector3 inregionPosition)

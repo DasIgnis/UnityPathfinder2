@@ -10,6 +10,8 @@ public class BotMovement : MonoBehaviour
 
     public GameObject DEBUG;
 
+    private GlobalPlanner globalPlanner = new GlobalPlanner();
+
     /// <summary>
     /// Запланированный путь как список точек маршрута
     /// </summary>
@@ -102,7 +104,7 @@ public class BotMovement : MonoBehaviour
                 // 3) если нет, то мы на границе зон. Сразу присваиваем точку из глобального планировщика currentTarget
                 // Не исключено, что из этой ф-ции имеет смысл возвращать не бульку, а enum со статусом работы
                 var currentPathNode = new BaseAI.PathNode(transform.position);
-                var milestone = GlobalPlanner.GetGlobalRoute(globalTarget, currentPathNode, movementProperties);
+                var milestone = globalPlanner.GetGlobalRoute(globalTarget, currentPathNode, movementProperties);
                 if (milestone != null)
                 {
                     NavMeshHit currentArea;
@@ -133,7 +135,7 @@ public class BotMovement : MonoBehaviour
             targetUpdated = false;
             var currentPathNode = new BaseAI.PathNode(transform.position);
             //Пример получения майлстоуна от планировщика
-            var milestone = GlobalPlanner.GetGlobalRoute(globalTarget, currentPathNode, movementProperties);
+            var milestone = globalPlanner.GetGlobalRoute(globalTarget, currentPathNode, movementProperties);
             if (milestone != null)
             {
                 currentPath = LocalPlanner.GetLocalRoute(milestone, currentPathNode, movementProperties);
