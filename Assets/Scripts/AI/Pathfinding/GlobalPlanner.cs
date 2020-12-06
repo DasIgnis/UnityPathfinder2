@@ -20,7 +20,7 @@ namespace Assets.Scripts.AI.Pathfinding
             int markVal = 0;
             marks.Add(start, markVal);
 
-            while (!(marks.ContainsKey(target) && marks.Keys.ToList() != points) //пока не пометили таргет и пока не пометили вообще всё
+            while (!(marks.ContainsKey(target)) && marks.Keys.ToList() != points) //пока не пометили таргет и пока не пометили вообще всё
              {
                 markedRegions = marks.Where(el => el.Value == d).ToList().Select(x => x.Key); // берем точки, помеченные числом d
 
@@ -44,7 +44,7 @@ namespace Assets.Scripts.AI.Pathfinding
                     Cartographer cartographer = new Cartographer();
                     var neighbours = cartographer.GetNeighbours(current.Index, current.PathPoints.First);
 
-                    next = marks.First(p => neighbours.Contains(p) && marks[p] == (marks[current] - 1));
+                    next = marks.First(p => neighbours.Contains(p) && marks[p] == (marks[current] - 1)); //
                     res.Add(next);
                     current = next;
                 }
