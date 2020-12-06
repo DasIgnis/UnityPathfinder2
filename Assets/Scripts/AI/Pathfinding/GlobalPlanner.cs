@@ -22,7 +22,7 @@ namespace Assets.Scripts.AI.Pathfinding
 
             while (!(marks.ContainsKey(target)) && marks.Keys.ToList() != points) //пока не пометили таргет и пока не пометили вообще всё
              {
-                markedRegions = marks.Where(el => el.Value == d).ToList().Select(x => x.Key); // берем точки, помеченные числом d
+                var markedRegions = marks.Where(el => el.Value == d).ToList().Select(x => x.Key); // берем точки, помеченные числом d
 
                 foreach (var reg in markedRegions)
                 {
@@ -48,8 +48,6 @@ namespace Assets.Scripts.AI.Pathfinding
                     res.Add(next);
                     current = next;
                 }
-                
-
             }
             return res; //возвращаем путь или пустой список
         }
