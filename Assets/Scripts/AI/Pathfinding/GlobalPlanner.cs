@@ -11,6 +11,49 @@ namespace Assets.Scripts.AI.Pathfinding
 {
     public static class GlobalPlanner
     {
+
+        public static List<PathNode> GetNextPoint(Region start, Region target, List<Region> points)
+        {
+
+            List<PathNode> res = new List<PathNode>();
+            Dictionary<Region, int> marks = new Dictionary<Region, int>();
+            int markVal = 0;
+            marks.Add(start, markVal);
+
+            while (!(marks.ContainsKey(target) && marks.Keys.ToList() != points) //пока не пометили таргет и пока не пометили вообще всё
+             {
+                markedRegions = marks.Where(el => el.Value == d).ToList().Select(x => x.Key); // берем точки, помеченные числом d
+
+                foreach (var reg in markedRegions)
+                {
+                    Cartographer cartographer = new Cartographer();
+                    var neighbours = cartographer.GetNeighbours(reg.Index, reg.PathPoints.First); //по какой точке брать соседей?
+
+                    foreach (var unmarked in neighbours)
+                        marks.Add(unmarked, markVal + 1); //помечаем все эти точки числом d+1
+                }
+                markVal += 1;
+            }
+
+            if (marks.ContainsKey(target))
+            {
+                var current = target;
+
+                while (current != start)
+                {
+                    Cartographer cartographer = new Cartographer();
+                    var neighbours = cartographer.GetNeighbours(current.Index, current.PathPoints.First);
+
+                    next = marks.First(p => neighbours.Contains(p) && marks[p] == (marks[current] - 1));
+                    res.Add(next);
+                    current = next;
+                }
+                
+
+            }
+            return res; //возвращаем путь или пустой список
+        }
+
         public static PathNode GetGlobalRoute(PathNode target, PathNode position, MovementProperties movementProperties)
         {
             NavMeshHit targetArea;
@@ -70,7 +113,7 @@ namespace Assets.Scripts.AI.Pathfinding
                             return node;
                         }
                     };
-                } 
+                }
                 else if (nextRegion.Type == RegionType.Moving)
                 {
                     PathNode regionExit = null;
@@ -79,9 +122,9 @@ namespace Assets.Scripts.AI.Pathfinding
 
                     }
                 }
-                
+
                 return new PathNode(neighbours[0].PathPoints[0]);
-            }           
+            }
 
             return null;
         }
