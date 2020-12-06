@@ -12,16 +12,85 @@ namespace Assets.Scripts.AI.Pathfinding
     public static class GlobalPlanner
     {
 
-        public static List<PathNode> GetNextPoint(Region start, Region target, List<Region> points)
+        public static Dictionary<Region, Dictionary<Region, float>> InitDijkstraVertices(List<Region> regions)
+        {
+            var res = new Dictionary<Region, Dictionary<Region, float>>();
+
+            Cartographer cartographer = new Cartographer();
+
+            foreach (Region reg in regions)
+            {
+                var neighbours = cartographer.GetNeighbours(reg.Index, reg.PathPoints.First());
+                var neighboursDict = new Dictionary<Region, float>();
+                foreach (var n in neighbours)
+                {
+                    neighboursDict.Add(n, n.Price);
+                    res[reg] = neighboursDict;
+                }
+            }
+            return res;
+        }
+
+        public static List<Region> GetPathWithDijkstra(Region start, Region target, List<Region> points)
+        {
+            var prevRegions = new Dictionary<Region, Region>();
+            var distances = new Dictionary<Region, float>();
+            var nodes = new List<Region>();
+
+            List<Region> path = null;
+
+            var vertices = InitDijkstraVertices(points);
+
+            foreach (var reg in vertices)
+            {
+                distances[reg.Key] = reg.Key == start ? 0 : int.MaxValue;
+                nodes.Add(reg.Key);
+            }
+
+            while (nodes.Count != 0)
+            {
+                nodes.Sort((x, y) => (int)(distances[x] - distances[y])); //опасное приведение типов?
+
+                var min = nodes[0];
+                nodes.Remove(min);
+
+                if (min == target)
+                {
+                    path = new List<Region>();
+                    while (prevRegions.ContainsKey(min))
+                    {
+                        path.Add(min);
+                        min = prevRegions[min];
+                    }
+                    break;
+                }
+
+                if (distances[min] == int.MaxValue)
+                    break;
+
+                foreach (var neighbour in vertices[min])
+                {
+                    var alt = distances[min] + neighbour.Value;
+                    if (alt < distances[neighbour.Key])
+                    {
+                        distances[neighbour.Key] = alt;
+                        prevRegions[neighbour.Key] = min;
+                    }
+                }
+            }
+            return path;
+        }
+
+        public static List<Region> GetNextPoint(Region start, Region target, List<Region> points)
         {
 
-            List<PathNode> res = new List<PathNode>();
+            List<Region> res = new List<Region>();
             Dictionary<Region, int> marks = new Dictionary<Region, int>();
             int markVal = 0;
             marks.Add(start, markVal);
 
             while (!(marks.ContainsKey(target)) && marks.Keys.ToList() != points) //пока не пометили таргет и пока не пометили вообще всё
-             {
+            {
                 var markedRegions = marks.Where(el => el.Value == markVal).ToList().Select(x => x.Key); // берем точки, помеченные числом d
 
                 foreach (var reg in markedRegions)
