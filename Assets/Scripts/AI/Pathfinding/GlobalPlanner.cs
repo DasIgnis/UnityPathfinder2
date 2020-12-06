@@ -44,7 +44,7 @@ namespace Assets.Scripts.AI.Pathfinding
                     Cartographer cartographer = new Cartographer();
                     var neighbours = cartographer.GetNeighbours(current.Index, current.PathPoints.First());
 
-                    var next = marks.First(p => neighbours.Contains(p.Key) && marks[p.Key] == (marks[current] - 1)); //
+                    var next = marks.First(p => neighbours.Contains(p.Key) && marks[p.Key] == (marks[current] - 1)).Key; //
                     res.Add(next);
                     current = next;
                 }
