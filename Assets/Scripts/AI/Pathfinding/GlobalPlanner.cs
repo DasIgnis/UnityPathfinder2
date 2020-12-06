@@ -42,9 +42,9 @@ namespace Assets.Scripts.AI.Pathfinding
                 while (current != start)
                 {
                     Cartographer cartographer = new Cartographer();
-                    var neighbours = cartographer.GetNeighbours(current.Index, current.PathPoints.First);
+                    var neighbours = cartographer.GetNeighbours(current.Index, current.PathPoints.First());
 
-                    next = marks.First(p => neighbours.Contains(p) && marks[p] == (marks[current] - 1)); //
+                    var next = marks.First(p => neighbours.Contains(p) && marks[p] == (marks[current] - 1)); //
                     res.Add(next);
                     current = next;
                 }
