@@ -13,26 +13,31 @@ namespace Assets.Scripts.AI.Pathfinding
     {
         private List<Region> globalPath = new List<Region>();
 
-        public Dictionary<Region, Dictionary<Region, float>> InitDijkstraVertices(List<Region> regions)
+        public Dictionary<Region, Dictionary<Region, float>> InitDijkstraVertices()
         {
             var res = new Dictionary<Region, Dictionary<Region, float>>();
 
             Cartographer cartographer = new Cartographer();
 
+            var regions = cartographer.regions;
+
             foreach (Region reg in regions)
             {
-                var neighbours = cartographer.GetNeighbours(reg.Index, reg.PathPoints.First());
+                var neighbours = cartographer.GetNeighboursUnrouted(reg.Index);
                 var neighboursDict = new Dictionary<Region, float>();
                 foreach (var n in neighbours)
                 {
-                    neighboursDict.Add(n, n.Price);
+                    neighboursDict.Add(n, cartographer.GetMovementPrice(n, reg.Index));
                     res[reg] = neighboursDict;
                 }
             }
             return res;
         }
 
-        public List<Region> GetPathWithDijkstra(Region start, Region target, List<Region> points)
+        public List<Region> GetPathWithDijkstra(
+            Region start, 
+            Region target, 
+            Vector3 initialPoint)
         {
             var prevRegions = new Dictionary<Region, Region>();
             var distances = new Dictionary<Region, float>();
@@ -40,22 +45,24 @@ namespace Assets.Scripts.AI.Pathfinding
 
             List<Region> path = null;
 
-            var vertices = InitDijkstraVertices(points);
+            var vertices = InitDijkstraVertices();
 
             foreach (var reg in vertices)
             {
-                distances[reg.Key] = reg.Key == start ? 0 : int.MaxValue;
+                distances[reg.Key] = reg.Key.Index == start.Index ? 0 : int.MaxValue;
                 nodes.Add(reg.Key);
             }
 
             while (nodes.Count != 0)
             {
-                nodes.Sort((x, y) => (int)(distances[x] - distances[y])); //опасное приведение типов?
+                //nodes.Sort((x, y) => (int)(distances[x] - distances[y])); //опасное приведение типов?
+
+                nodes = nodes.OrderBy(x => distances[x]).ToList();
 
                 var min = nodes[0];
                 nodes.Remove(min);
 
-                if (min == target)
+                if (min.Index == target.Index)
                 {
                     path = new List<Region>();
                     while (prevRegions.ContainsKey(min))
@@ -83,46 +90,6 @@ namespace Assets.Scripts.AI.Pathfinding
             return path;
         }
 
-        //public static List<Region> GetNextPoint(Region start, Region target, List<Region> points)
-        //{
-
-        //    List<Region> res = new List<Region>();
-        //    Dictionary<Region, int> marks = new Dictionary<Region, int>();
-        //    int markVal = 0;
-        //    marks.Add(start, markVal);
-
-        //    while (!(marks.ContainsKey(target)) && marks.Keys.ToList() != points) //пока не пометили таргет и пока не пометили вообще всё
-        //    {
-        //        var markedRegions = marks.Where(el => el.Value == markVal).ToList().Select(x => x.Key); // берем точки, помеченные числом d
-
-        //        foreach (var reg in markedRegions)
-        //        {
-        //            Cartographer cartographer = new Cartographer();
-        //            var neighbours = cartographer.GetNeighbours(reg.Index, reg.PathPoints.First()); //по какой точке брать соседей?
-
-        //            foreach (var unmarked in neighbours)
-        //                marks.Add(unmarked, markVal + 1); //помечаем все эти точки числом d+1
-        //        }
-        //        markVal += 1;
-        //    }
-
-        //    if (marks.ContainsKey(target))
-        //    {
-        //        var current = target;
-
-        //        while (current != start)
-        //        {
-        //            Cartographer cartographer = new Cartographer();
-        //            var neighbours = cartographer.GetNeighbours(current.Index, current.PathPoints.First());
-
-        //            var next = marks.First(p => neighbours.Contains(p.Key) && marks[p.Key] == (marks[current] - 1)).Key; //
-        //            res.Add(next);
-        //            current = next;
-        //        }
-        //    }
-        //    return res; //возвращаем путь или пустой список
-        //}
-
         public PathNode GetGlobalRoute(PathNode target, PathNode position, MovementProperties movementProperties)
         {
             NavMeshHit targetArea;
@@ -142,8 +109,8 @@ namespace Assets.Scripts.AI.Pathfinding
             if (NavMesh.SamplePosition(adjustedPosition, out _, 1f, NavMesh.AllAreas) 
                 && currentArea.mask == targetArea.mask)
             {
-                if (targetArea.position.x - currentArea.position.x < movementProperties.deltaTime * movementProperties.maxSpeed
-                    && targetArea.position.z - currentArea.position.z < movementProperties.deltaTime * movementProperties.maxSpeed)
+                if (targetArea.position.x - currentArea.position.x < 1f
+                    && targetArea.position.z - currentArea.position.z < 1f)
                 {
                     return null;
                 }
@@ -153,11 +120,25 @@ namespace Assets.Scripts.AI.Pathfinding
                 return target;
             }
 
-            Cartographer cartographer = new Cartographer();
-
             if (globalPath.Count == 0)
             {
-                globalPath = new List<Region>();
+                globalPath = GetPathWithDijkstra(
+                    new Region { Index = currentArea.mask, Type = RegionType.Stable },
+                    new Region { Index = targetArea.mask, Type = RegionType.Stable },
+                    target.Position);
+
+                Cartographer cartographer = new Cartographer();
+                int areaMask = currentArea.mask;
+                Vector3 inregionPosition = adjustedPosition;
+
+                for (int i = 0; i < globalPath.Count(); i++)
+                {
+                    var neighbours = cartographer.GetNeighbours(areaMask, inregionPosition);
+                    var modifiedRegion = neighbours.Find(x => x.Index == globalPath[i].Index);
+                    globalPath[i] = modifiedRegion;
+                    inregionPosition = modifiedRegion.PathPoints[0];
+                    areaMask = modifiedRegion.Index;
+                }
             }
 
             if (globalPath.Count != 0)
@@ -167,6 +148,10 @@ namespace Assets.Scripts.AI.Pathfinding
                 if (currentArea.mask == nextRegion.Index)
                 {
                     globalPath.RemoveAt(0);
+
+                    if (globalPath.Count == 0)
+                        return target;
+
                     nextRegion = globalPath.First();
                 }
 

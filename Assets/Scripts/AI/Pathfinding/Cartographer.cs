@@ -24,6 +24,16 @@ namespace Assets.Scripts.AI.Pathfinding
         {
             PathPoints = new List<Vector3>();
         }
+
+        public override int GetHashCode()
+        {
+            return Index.GetHashCode() ^ Type.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return base.Equals(obj);
+        }
     }
 
     public class MovingRegion: Region
@@ -36,7 +46,7 @@ namespace Assets.Scripts.AI.Pathfinding
     public class Cartographer
     {
         private Dictionary<int, List<int>> neigbours = new Dictionary<int, List<int>>();
-        private List<Region> regions = new List<Region>();
+        public List<Region> regions = new List<Region>();
         public Cartographer()
         {
             regions.Add(new Region { Index = 8, Type = RegionType.Stable });
@@ -50,8 +60,11 @@ namespace Assets.Scripts.AI.Pathfinding
             regions.Add(new Region { Index = 16, Type = RegionType.Stable });
             regions.Add(new Region { Index = 32, Type = RegionType.Stable });
 
-            neigbours.Add(8, new List<int> { 64 });
-            neigbours.Add(64, new List<int> { 32 });
+            neigbours.Add(8, new List<int> { 64, 128 });
+            neigbours.Add(64, new List<int> { 8, 32 });
+            neigbours.Add(128, new List<int> { 8, 16 });
+            neigbours.Add(16, new List<int> { 128 });
+            neigbours.Add(32, new List<int> { 64 });
         }
 
         public List<Region> GetNeighbours(int regionIndex, Vector3 inregionPosition)
@@ -77,7 +90,12 @@ namespace Assets.Scripts.AI.Pathfinding
             return result;
         }
 
-        private float GetMovementPrice(Region region, int triggerRegionIndex)
+        public List<Region> GetNeighboursUnrouted(int regionIndex)
+        {
+            return regions.Where(x => neigbours[regionIndex].Contains(x.Index)).ToList();
+        }
+
+        public float GetMovementPrice(Region region, int triggerRegionIndex)
         {
             //Если тип региона обычный, то просто берем минимальное время прохождения региона (минимальная ширина на скорость, полагаю)
             //Если тип региона - движущийся, то мы берем текущее положение точки входа, 
