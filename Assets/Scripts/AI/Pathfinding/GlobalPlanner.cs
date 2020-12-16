@@ -90,7 +90,7 @@ namespace Assets.Scripts.AI.Pathfinding
             return path;
         }
 
-        public PathNode GetGlobalRoute(PathNode target, PathNode position, MovementProperties movementProperties)
+        public PathNode GetGlobalRoute(PathNode target, PathNode position, MovementProperties movementProperties, bool onPlatform)
         {
             NavMeshHit targetArea;
             if (!NavMesh.SamplePosition(target.Position, out targetArea, 1f, NavMesh.AllAreas))
@@ -155,6 +155,19 @@ namespace Assets.Scripts.AI.Pathfinding
                     nextRegion = globalPath.First();
                 }
 
+                if (nextRegion.Type == RegionType.Moving
+                    && globalPath.Count > 1
+                    && globalPath[1].Index == currentArea.mask)
+                {
+                    globalPath.RemoveAt(0);
+                    globalPath.RemoveAt(1);
+
+                    if (globalPath.Count == 0)
+                        return target;
+
+                    nextRegion = globalPath.First();
+                }
+
                 if (nextRegion.Type == RegionType.Stable)
                 {
                     return calcStableRegionPath(nextRegion, currentArea, adjustedPosition, movementProperties);
@@ -194,8 +207,7 @@ namespace Assets.Scripts.AI.Pathfinding
                     //Если мы уже на платформе, то идем следующий регион среди выходных точек и ждем, пока доедем
                     //Либо если мы уже на входе в следующий регион, то топаем дальше
                     var entryPointPosition = movingRegion.EntryPoint.transform.position;
-                    if (entryPointPosition.x - adjustedPosition.x < 1f
-                        && entryPointPosition.z - adjustedPosition.z < 1f)
+                    if (onPlatform)
                     {
                         if (globalPath.Count < 2)
                         {

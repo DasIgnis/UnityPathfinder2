@@ -83,13 +83,14 @@ public class BotMovement : MonoBehaviour
         {
             if (currentTarget.JumpingPosition)
             {
-                currentTarget = globalPlanner.GetGlobalRoute(globalTarget, new BaseAI.PathNode(transform.position), movementProperties);
+                currentTarget = globalPlanner.GetGlobalRoute(globalTarget, new BaseAI.PathNode(transform.position), movementProperties, transform.parent != null);
                 return true;
             }
 
             Vector3 dummyPosition = new Vector3(transform.position.x, currentTarget.Position.y, transform.position.z);
             float distanceToTarget = currentTarget.Distance(dummyPosition);
-            if (distanceToTarget >= movementProperties.epsilon)//|| currentTarget.TimeMoment - Time.fixedTime > movementProperties.epsilon) 
+            if (distanceToTarget >= movementProperties.epsilon
+                && transform.parent == null)//|| currentTarget.TimeMoment - Time.fixedTime > movementProperties.epsilon) 
                 return true;
             //Debug.Log("Point reached : " + Time.fixedTime.ToString());
             if (currentPath != null)
@@ -110,7 +111,12 @@ public class BotMovement : MonoBehaviour
                 // 2) если в той же, то скармливает её локалпланнеру и возвращаем этот маршрут
                 // 3) если нет, то мы на границе зон. Сразу присваиваем точку из глобального планировщика currentTarget
                 var currentPathNode = new BaseAI.PathNode(transform.position);
-                var milestone = globalPlanner.GetGlobalRoute(globalTarget, currentPathNode, movementProperties);
+                var milestone = globalPlanner.GetGlobalRoute(globalTarget, currentPathNode, movementProperties, transform.parent != null);
+                if (transform.parent != null)
+                {
+                    currentTarget = milestone;
+                    return true;
+                }
                 if (milestone != null)
                 {
                     NavMeshHit currentArea;
@@ -145,7 +151,7 @@ public class BotMovement : MonoBehaviour
             targetUpdated = false;
             var currentPathNode = new BaseAI.PathNode(transform.position);
             //Пример получения майлстоуна от планировщика
-            var milestone = globalPlanner.GetGlobalRoute(globalTarget, currentPathNode, movementProperties);
+            var milestone = globalPlanner.GetGlobalRoute(globalTarget, currentPathNode, movementProperties, transform.parent != null);
             if (milestone != null)
             {
                 currentPath = LocalPlanner.GetLocalRoute(milestone, currentPathNode, movementProperties);
@@ -155,6 +161,10 @@ public class BotMovement : MonoBehaviour
                     Instantiate(DEBUG, currentPath[i].Position, Quaternion.identity);
                 }
             }
+        }
+        else if (currentTarget == null)
+        {
+
         }
 
         if(currentPath != null)
@@ -216,6 +226,7 @@ public class BotMovement : MonoBehaviour
                 float platformAngle = Vector3.SignedAngle(transform.forward, directionToPlatform, Vector3.up);
                 platformAngle = Mathf.Clamp(platformAngle, -movementProperties.rotationAngle, movementProperties.rotationAngle);
                 transform.Rotate(Vector3.up, platformAngle);
+                return false;
             }
                  
             if (distanceToTarget > movementProperties.jumpLength)
@@ -261,18 +272,20 @@ public class BotMovement : MonoBehaviour
 
     void Jump()
     {
-        var rb = GetComponent<Rigidbody>();
-        //  Сбрасываем скорость перед прыжком
-        rb.velocity = Vector3.zero;
-        var jump = 1.5f * transform.forward + 0.3f * transform.up;
-        float jumpForce = movementProperties.jumpForce;
-        rb.AddForce(jump * jumpForce, ForceMode.VelocityChange);
-        isJumping = true;
+        //var rb = GetComponent<Rigidbody>();
+        ////  Сбрасываем скорость перед прыжком
+        //rb.velocity = Vector3.zero;
+        //var jump = 1.5f * transform.forward + 0.3f * transform.up;
+        //float jumpForce = movementProperties.jumpForce;
+        //rb.AddForce(jump * jumpForce, ForceMode.VelocityChange);
+        //isJumping = true;
+        transform.position = new Vector3(currentTarget.Position.x, transform.position.y, currentTarget.Position.z);
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.layer == LayerMask.NameToLayer("MovingPlatform"))
+        var colMas = LayerMask.NameToLayer("MovingPlatform");
+        if (collision.gameObject.layer == colMas)
         {
             transform.parent = collision.gameObject.transform;
         }
@@ -280,11 +293,11 @@ public class BotMovement : MonoBehaviour
         {
             transform.parent = null;
         }
-        var rb = GetComponent<Rigidbody>();
-        //  Сбрасываем скорость перед прыжком
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-        isJumping = false;
+        //var rb = GetComponent<Rigidbody>();
+        ////  Сбрасываем скорость перед прыжком
+        //rb.velocity = Vector3.zero;
+        //rb.angularVelocity = Vector3.zero;
+        //isJumping = false;
     }
 
     /// <summary>
