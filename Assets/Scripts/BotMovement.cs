@@ -220,6 +220,10 @@ public class BotMovement : MonoBehaviour
                  
             if (distanceToTarget > movementProperties.jumpLength)
             {
+                Vector3 directionToPlatform = currentTarget.Position - transform.position;
+                float platformAngle = Vector3.SignedAngle(transform.forward, directionToPlatform, Vector3.up);
+                platformAngle = Mathf.Clamp(platformAngle, -movementProperties.rotationAngle, movementProperties.rotationAngle);
+                transform.Rotate(Vector3.up, platformAngle);
                 return false;
             }
             else

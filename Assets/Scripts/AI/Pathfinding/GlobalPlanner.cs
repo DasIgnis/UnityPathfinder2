@@ -243,7 +243,7 @@ namespace Assets.Scripts.AI.Pathfinding
         {
             NavMeshHit moveTo;
             //Ищем ближайшую точку текущего региона, соседствующаю с целевым регионом
-            if (NavMesh.SamplePosition(nextRegion.PathPoints[0], out moveTo, 20, currentArea.mask))
+            if (NavMesh.SamplePosition(nextRegion.PathPoints[0], out moveTo, 40f, currentArea.mask))
             {
                 //Если мы в данный момент находимся близко к найденной точке, то мы на границе
                 //В этом случае возвращаем точку из соседнего региона
@@ -261,8 +261,13 @@ namespace Assets.Scripts.AI.Pathfinding
                     node.RegionId = currentArea.mask;
                     return node;
                 }
+            }
+            else
+            {
+                var node = new PathNode(moveTo.position);
+                node.RegionId = currentArea.mask;
+                return node;
             };
-            return null;
         }
     }
 }
