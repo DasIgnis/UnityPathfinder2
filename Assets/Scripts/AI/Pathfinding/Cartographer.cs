@@ -97,6 +97,30 @@ namespace Assets.Scripts.AI.Pathfinding
 
         public float GetMovementPrice(Region region, int triggerRegionIndex)
         {
+            
+            if (region.Type == RegionType.Stable)
+                switch (region.Index)
+                {
+                    case 8:
+                        return 50f;
+                    case 16:
+                        return 30f;
+                    case 32:
+                        return 70f;
+                    case 128:
+                        return 10f;
+                }
+            else
+            {
+                switch (region.Index)
+                {
+                    case 64:
+                        return 38f / 2;
+                    // case 256:
+                    //     return 63f / 2;
+                }
+            }
+
             //Если тип региона обычный, то просто берем минимальное время прохождения региона (минимальная ширина на скорость, полагаю)
             //Если тип региона - движущийся, то мы берем текущее положение точки входа, 
             //и смотрим время, через которое она совершит оборот сначала до первого положения входа в зону движения,
